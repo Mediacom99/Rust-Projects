@@ -1,0 +1,23 @@
+
+The Cargo home directory is located at:
+
+  /home/edoardo/.cargo
+
+This can be modified with the CARGO_HOME environment variable.
+
+The cargo, rustc, rustup and other commands will be added to
+Cargo's bin directory, located at:
+
+  /home/edoardo/.cargo/bin
+
+This path will then be added to your PATH environment variable by
+modifying the profile files located at:
+
+  /home/edoardo/.profile
+  /home/edoardo/.bashrc
+  /home/edoardo/.config/zsh/.zshenv
+
+You can uninstall at any time with rustup self uninstall and
+these changes will be reverted.
+
+UNINSTALLING RUSTUP: rustup self uninstall
