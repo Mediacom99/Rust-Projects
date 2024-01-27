@@ -1,40 +1,27 @@
+
+
 /*
-    Prints out a list of HID devices
-*/
+*   1. Create Hidapi context
+*   2. reset devices
+*   3. add device with VID and PID
+*   4. open that device
+*   5. Do smth using HidDevice (read write)
+* */
 
-use hidapi::HidApi;
-use std::thread::sleep;
-use std::time::Duration;
+use hidapi::*;
+// use hidapi::HidError;
 
-const TIME_S: Duration = Duration::new(2, 0);
+const VID: u16 = 1;
+const PID: u16 = 2;
 
-fn main() {
-    println!("Printing all available hid devices:\n");
+fn main(){
 
-    loop {
-        match HidApi::new() {
-            Ok(api) => {
-                for device in api.device_list() {
-                    println!(
-                        "VID: {:04x}, PID: {:04x}, Serial: {}, Product name: {}, Interface: {}",
-                        device.vendor_id(),
-                        device.product_id(),
-                        match device.serial_number() {
-                            Some(s) => s,
-                            _ => "<COULD NOT FETCH>",
-                        },
-                        match device.product_string() {
-                            Some(s) => s,
-                            _ => "<COULD NOT FETCH>",
-                        },
-                        device.interface_number()
-                    );
-                }
-            }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-            }
-        }
-        sleep(TIME_S);
-    }
+    //Initialize an HidApi contex 
+    let api = HidApi::new().expect("Failed to initialize HidApi context");
+
+    //Reset devices
+    api.reset_devices().error("Could not reset the hid devices");
+
+    //Add device with certain VID and PID
+    
 }
