@@ -2,3 +2,4 @@ Learning/RustlingsLocal/*
 
 #Generated files
 target/
+!target/release/
