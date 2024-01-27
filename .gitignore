@@ -1,5 +1,8 @@
 Learning/RustlingsLocal/*
 
 #Generated files
-target/debug/
-target/CACHEDIR.TAG
+target/
+
+
+
+
