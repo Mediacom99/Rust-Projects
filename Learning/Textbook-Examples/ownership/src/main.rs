@@ -91,6 +91,24 @@ fn main() {
     //
 
     // STRING SLICES
+    //
+    // A slice type is a reference only to a subset of heap allocated values, for example you could
+    // only reference a substring of a string. It's a way to automatically manage correct indices
+    // to refer to a sub-array of a heap allocated array.
+    //
+    // For example a string slice is:
+    let string = String::from("hello world"); //Moving the String value from the function to this
+                                              //scope
+    let hello = &string[0..5];
+    let world = &string[6..11];
+    println!("{}, {}", hello, world);
+    //Syntax of a slice: let <var-name> = &<heap-allocated-object>[<starting index>..<ending index>];
+    // &s[0..2] is equal to &s[..2];
+    //
+    let text = String::from("Sparagli Pietro sparagli ora e dopo un colpo sparagli ancora");
+    let word = first_word(&text);
+
+    println!("{}", word);
 }
 
 //This function is an example of dangling references
@@ -108,10 +126,22 @@ fn take_ownership(somestring: String) {
   //
   // Return values can give ownership
 fn gives_ownership() -> String {
-    let s = String::from("here you go!");
-    s //Here s' value is passed to whatever calls this function, thus s does not own anything
-      //anymore
+    String::from("here you go!")
+    //Here s' value is passed to whatever calls this function, thus s does not own anything
+    //anymore
 }
 fn calculate_lentgh(s: &String) -> usize {
     s.len()
+}
+
+fn first_word(string: &String) -> &str {
+    let bytes = string.as_bytes();
+
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &string[0..i];
+        }
+    }
+
+    &string[..]
 }
