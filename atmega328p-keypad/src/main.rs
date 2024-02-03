@@ -5,102 +5,57 @@
 *   4. open that device
 *   5. Do smth using HidDevice (read write)
 * */
+use rusb::*;
+mod rusbutils;
+use std::process::exit;
+use std::time::Duration;
 
-use hidapi::*;
-use listhiddev::TIME_S;
-use std::thread::sleep;
+const TIMEOUT: Duration = Duration::from_secs(60);
 
-// Local Modules
-mod listhiddev;
-
-// const VID: u16 = 5824;
-// const PID: u16 = 1503;
-const VID: u16 = 3599;
-const PID: u16 = 3;
-const PAYLOAD_BYTES: usize = 128;
-const REPORT_BYTES: usize = 8;
-
-fn print_byte_stream_hex(bytes_read: usize, buf: &[u8]) {
-    for bytes in 0..bytes_read {
-        print!("0x{:x} ", buf[bytes]);
-        if bytes % 2 == 0 {
-            println!(" ");
-        }
-    }
-    println!(" ");
-}
+const VID: u16 = 0x16c0;
+const PID: u16 = 0x05dc;
+const MAXBUFSIZE: usize = 1024;
+//const VID: u16 = 3599;
+//const PID: u16 = 3;
+//const PAYLOAD_BYTES: usize = 128;
+//const REPORT_BYTES: usize = 8;
 
 fn main() {
-    let mut buf: [u8; MAX_REPORT_DESCRIPTOR_SIZE] = [0; MAX_REPORT_DESCRIPTOR_SIZE];
+    //Create new libusb context
+    let context = Context::new().expect("Could not create a libusb context!");
 
-    println!("Initializing HidApi context...");
-    //Initialize an HidApi contex
-    let mut api = HidApi::new().expect("Failed to initialize HidApi context");
+    //list_usb_devices(&context);
 
-    listhiddev::list_hid_devices(&api);
+    //Open and get a handle to a device with a certain VID and PID
+    let dhandle = match context.open_device_with_vid_pid(VID, PID) {
+        Some(res) => res,
+        None => {
+            println!("Could not open device");
+            exit(1);
+        }
+    };
 
-    println!("Resetting hid devices...");
-    //Reset devices
-    api.reset_devices()
-        .expect("Could not reset the hid devices");
+    //Hid request protocol
+    let request_type: u8 = 0xa1;
+    let request: u8 = 0x01;
+    let value: u16 = 0x00;
+    let index: u16 = 0x00;
+    let mut buffer: [u8; MAXBUFSIZE] = [0; MAXBUFSIZE];
 
-    println!("Adding ATMega328p device...");
-    //Add device with certain VID and PID
-    api.add_devices(VID, PID).expect("Could not add device!");
-
-    println!("Opening ATMega328p device...");
-    //Open HID device
-    let atmega: HidDevice = api.open(VID, PID).expect("Could not open the device!");
-
-    println!("Getting report descriptor...");
-    //Get report descriptor
-    let bytes_read = atmega
-        .get_report_descriptor(&mut buf)
-        .expect("Could not get report descriptor!");
-
-    println!("Bytes read: {bytes_read}");
-    println!("Report descriptor:");
-    print_byte_stream_hex(bytes_read, &buf);
-
-    println!("\n\nStarting reading loop...\n\n");
-
-    //Write an output request to the device
-    let mut report: [u8; REPORT_BYTES] = [0; REPORT_BYTES];
-
-    report[0] = 0xa1;
-    report[1] = 0x01;
-    report[2] = 0x03;
-    report[3] = 0x00;
-    report[4] = 0x00;
-    report[5] = 0x00;
-    report[6] = 0x00;
-    report[7] = 0x00;
-
-    let written_bytes = atmega
-        .write(&report)
-        .expect("Could not write output report to device");
-    println!("Written bytes: {written_bytes}");
-
-    //Set device in non-blocking mode (read waits for input from device)
-    atmega
-        .set_blocking_mode(false)
-        .expect("Could NOT set the device in NON-blocking mode!");
-
-    //Not using numbered reports/Trying to get some data from the micro
-    let mut payload: [u8; PAYLOAD_BYTES] = [0; PAYLOAD_BYTES]; //8 bytes payload
     loop {
-        let succ_read = atmega
-            .get_feature_report(&mut payload)
-            .expect("Could not read report from device");
-        println!("Bytes read: {succ_read}");
-        print_byte_stream_hex(PAYLOAD_BYTES, &payload);
-        sleep(TIME_S);
-        /*
-        let payload: Vec<u8> = payload.to_vec();
-        println!(
-            "Payload:\n{}",
-            String::from_utf8(payload).expect("Could not convert payload into UTF-8 string!")
-        );
-        */
+        //First send an input request to the device then read whatever the device sends back
+        let bytes_read: usize =
+            match dhandle.read_control(request_type, request, value, index, &mut buffer, TIMEOUT) {
+                Ok(br) => br,
+                Err(err) => {
+                    println!("No bytes read! Error: {}", err);
+                    exit(2);
+                }
+            };
+        println!("Bytes read: {bytes_read}");
+        //lossy will turn every valid utf8 character into the appropriate symbol, while the invalid
+        //ones will be shown as this symbol: � (it returns a smart pointer)
+        let from_device = String::from_utf8_lossy(&buffer);
+        println!("From device: {}", from_device);
     }
 }
