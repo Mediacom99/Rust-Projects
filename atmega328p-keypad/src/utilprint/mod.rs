@@ -1,3 +1,6 @@
+//Utility functions like printing status of objects, usb devices and so on. These are all functions
+//that only give information to the user by printing something on stdout
+
 use rusb::*;
 use std::process::exit;
 

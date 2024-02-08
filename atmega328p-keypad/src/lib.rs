@@ -1,4 +1,4 @@
-pub mod util;
+pub mod utilprint;
 
 use rusb::*;
 use std::process::exit;

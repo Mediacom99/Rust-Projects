@@ -7,7 +7,7 @@ fn main() {
     //Initialize new libusb
     let context = init_context();
 
-    util::list_usb_devices(&context);
+    utilprint::list_usb_devices(&context);
 
     micro_control_read(&context);
 }
