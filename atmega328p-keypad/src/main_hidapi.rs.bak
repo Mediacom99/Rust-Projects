@@ -6,15 +6,12 @@
 *   5. Do smth using HidDevice (read write)
 * */
 
-use hidapi::*;
-use listhiddev::TIME_S;
-use std::thread::sleep;
-
 // Local Modules
 mod listhiddev;
 
-// const VID: u16 = 5824;
-// const PID: u16 = 1503;
+use hidapi::*;
+use listhiddev::TIME_S;
+use std::thread::sleep;
 const VID: u16 = 3599;
 const PID: u16 = 3;
 const PAYLOAD_BYTES: usize = 128;
