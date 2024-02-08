@@ -98,4 +98,60 @@ fn main() {
             println!("Not a valid String type!")
         }
     }
+
+    //Match something and do something else with whatever else comes out
+
+    let number: u8 = 24;
+    match number {
+        0 => println!("It's zero: 0"),
+        1 => println!("It's one: 1"),
+        somethig_else => println!("It's somethig_else: {somethig_else}"),
+    }
+
+    //Or maybe you want to do smth that does not require the value:
+    match number {
+        0 => println!("It's zero: 0"),
+        1 => println!("It's one: 1"),
+        _ => println!("It's whatever else but I don't need to use it!"),
+    }
+
+    //Or maybe you don't want to do anything with the other cases:
+    match number {
+        0 => println!("It's zero!"),
+        1 => println!("It's one!"),
+        2 => println!("It's two!"),
+        _ => {
+            println!("Don't need to run any code!");
+            // ()   You can omit the unit expression '()' if there is at least one statement
+        }
+    }
+
+    //If let syntax:
+    /*
+        This two code blocks are the same:
+
+        let config: u38 = 0;
+
+        match config = {
+        0, => println("It's zero"),
+        _ => (),
+        }
+
+        if let 0 = config {
+        println!("It's zero!");
+    } */
+
+    let config: Option<u32> = Some(420);
+    // let config: Option<u32> = None;
+
+    if let Some(num) = config {
+        println!("The Some number is: {}", num);
+    }
+
+    //Ofc  you can do a if let else block like this:
+    if let Some(num) = config {
+        println!("There's some number: {}", num);
+    } else {
+        println!("There is no number!");
+    }
 }
