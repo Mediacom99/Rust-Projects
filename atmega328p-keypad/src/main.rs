@@ -2,12 +2,37 @@
 
 //This crate's library
 use atmega328p_keypad::*;
+use std::{env, process::exit};
 
 fn main() {
-    //Initialize new libusb
-    let context = init_context();
+    //Get command line arguments FIXME: Should not panic if no arguments are produced but instead I
+    //should write some help stuff
+    let args: Vec<String> = env::args().collect();
+    let command = &args[1];
 
-    utilprint::list_usb_devices(&context);
+    match command.as_str() {
+        "list" => {
+            let context = init_context();
+            utilprint::list_usb_devices(&context);
+        }
+        "read-control" => {
+            let context = init_context();
+            micro_control_read(&context);
+        }
+        "write-read-control" => {
+            let context = init_context();
+            micro_control_write_read(&context);
+        }
+        "help" => {
+            println!("Provide at least one argument from the following:");
+            println!("\tlist                                        List connected usb devices");
+            println!("\tread-control                                Read from micro using control transfer");
+            println!("\twrite-read-control                          Write as many as 100 bytes to the micro he sends them back!");
+        }
 
-    micro_control_read(&context);
+        _ => {
+            println!("Not a valid command!");
+            exit(99);
+        }
+    }
 }
