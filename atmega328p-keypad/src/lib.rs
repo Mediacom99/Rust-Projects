@@ -11,8 +11,9 @@ pub const WAIT: Duration = Duration::from_millis(500);
 pub const VID: u16 = 0x16c0;
 pub const PID: u16 = 0x05dc;
 pub const MAXBUFSIZE: usize = 100;
+pub const READ_BUFSIZE: usize = 1;
 
-//NOTE:SHOULD DO AN ENUM OF THIS TWO
+//NOTE:SHOULD DO AN ENUM OF THIS TWO AND ALSO ADD FUNCTION TO GET AND SET STRUCT FIELDS
 struct CRWrite {
     //Control transfer read request
     request_type: u8,
@@ -50,10 +51,14 @@ impl CRWrite {
         CRWrite {
             request_type: 0b00100001,
             brequest: 0x09,
-            wvalue: 0x00,
-            windex: 0x00,
+            wvalue: 0x0000, //byte vuoto + byte (+)
+            windex: 0x0000,
             buffer,
         }
+    }
+
+    fn _set_wvalue(&mut self, wvalue: u16) {
+        self.wvalue = wvalue;
     }
 }
 
@@ -111,6 +116,18 @@ pub fn micro_control_read(context: &Context) {
         sleep(WAIT);
     }
 }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 //Write a byte (or more), get back the same byte (or more) in a loop
 pub fn micro_control_write_read(context: &Context) {
@@ -193,6 +210,17 @@ pub fn micro_control_write_read(context: &Context) {
     }
 }
 
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
 fn get_from_user() -> Vec<u8> {
     println!("Write what you want to send to atmega:");
     let mut from_user: String = String::new();
@@ -207,3 +235,97 @@ fn get_from_user() -> Vec<u8> {
         }
     }
 }
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+//Write a control report that sends in the control transfer parameter wvalue the char that will be sent using interrupt
+// Read the interrupt
+pub fn micro_interrupt_read(context: &Context) {
+    println!(
+        "Reading input from [VID: {}  PID: {}] using an interrupt transfer...\n",
+        VID, PID
+    );
+    //Open and get a handle to a device with a certain VID and PID
+    let mut dhandle = match context.open_device_with_vid_pid(VID, PID) {
+        Some(res) => res,
+        None => {
+            println!("Could not open device");
+            exit(1);
+        }
+    };
+
+    //Initialize control transfer to give the micro the byte to send with the interrupt
+
+    let buffer: Vec<u8> = Vec::new(); //Sending empty buffer because the char is provided in wvalue
+    let mut wrep: CRWrite = CRWrite::setup(buffer);
+    wrep._set_wvalue(0x2b00); //Hex for ascii '+'
+
+    let bytes_sent: usize = match dhandle.write_control(
+        wrep.request_type,
+        wrep.brequest,
+        wrep.wvalue,
+        wrep.windex,
+        wrep.buffer.as_slice(),
+        TIMEOUT,
+    ) {
+        Ok(bs) => bs,
+        Err(err) => {
+            println!("No bytes sent! Error: {}", err);
+            exit(2);
+        }
+    };
+    println!("Control report buffer bytes sent: {}", bytes_sent);
+    println!("Control request sent successfully");
+
+    //NOTE:EVERYTHING THAT USES OTHER TRANSFERS OTHER THAN CONTROL MUST GO AFTER ANY CONTROL STUFF
+    //Claim the correct interface that cointains the endpoint configured for this type of transfer
+    //The interface is automatically release when the device handle goes out of scope
+    match dhandle.claim_interface(0) {
+        Ok(()) => {
+            println!("Successfully claimed interface 0");
+        }
+        Err(err) => {
+            println!("Could not claim interface! Error: {}", err);
+        }
+    }
+
+    //Read from micro using interrupt transfer
+    let mut buf: [u8; READ_BUFSIZE] = [0];
+
+    loop {
+        let bytes_read: usize = match dhandle.read_interrupt(0x81, &mut buf, TIMEOUT) {
+            Ok(br) => br,
+            Err(err) => {
+                println!("Could not read bytes using interrupt. Error: {}", err);
+                continue;
+            }
+        };
+        println!(
+            "Bytes read from interrupt: {bytes_read} Input read: {}",
+            String::from_utf8_lossy(&buf)
+        );
+    }
+}
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//

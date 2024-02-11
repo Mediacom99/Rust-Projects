@@ -1,6 +1,7 @@
 //Utility functions like printing status of objects, usb devices and so on. These are all functions
 //that only give information to the user by printing something on stdout
 
+use crate::{PID, VID};
 use rusb::*;
 use std::process::exit;
 
@@ -98,6 +99,67 @@ pub fn list_usb_devices(context: &Context) {
                 }
             };
             device_info.print();
+        }
+    }
+}
+
+//NOTE: MAKE IT BETTER AND RETURN USEFUL INFORMATION AS STRUCT
+pub fn micro_get_info(context: &Context) {
+    //Open and get a handle to a device with a certain VID and PID
+    let dhandle = match context.open_device_with_vid_pid(VID, PID) {
+        Some(res) => res,
+        None => {
+            println!("Could not open device");
+            exit(1);
+        }
+    };
+
+    //Get device struct from device handle
+    let device = dhandle.device();
+
+    //Read active configuration descriptor
+    let cfg_desc = match device.active_config_descriptor() {
+        Ok(cfg) => cfg,
+        Err(err) => {
+            println!(
+                "Could not read active configuration descriptor from device! Error: {}",
+                err
+            );
+            exit(13);
+        }
+    };
+
+    println!("Device Max Power in milliamps: {}", cfg_desc.max_power());
+    println!("Number of interfaces: {}", cfg_desc.num_interfaces());
+
+    //Iterate over interfaces in the current configuration:
+    for interface in cfg_desc.interfaces() {
+        //Iterate over current interface descriptors
+        for desc in interface.descriptors() {
+            println!("Interface number: {}", desc.interface_number());
+            println!("ALternate setting number: {}", desc.setting_number());
+            println!("Class code: {}", desc.class_code());
+            println!("Sub class code: {}", desc.sub_class_code());
+            println!("Number of endpoints: {}", desc.num_endpoints());
+            for edesc in desc.endpoint_descriptors() {
+                println!("Endpoint address: {}", edesc.address());
+                println!("Endpoint number: {}", edesc.number());
+                println!("Max packet size: {}", edesc.max_packet_size());
+                match edesc.direction() {
+                    Direction::In => {
+                        println!("Direction: IN");
+                    }
+                    Direction::Out => {
+                        println!("Direction: OUT");
+                    }
+                }
+                match edesc.transfer_type() {
+                    TransferType::Control => println!("Transfer: control"),
+                    TransferType::Isochronous => println!("Transfer: isochronous"),
+                    TransferType::Bulk => println!("Transfer: bulk"),
+                    TransferType::Interrupt => println!("Transfer: interrupt"),
+                }
+            }
         }
     }
 }
