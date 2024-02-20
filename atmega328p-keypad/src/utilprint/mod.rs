@@ -103,7 +103,8 @@ pub fn list_usb_devices(context: &Context) {
     }
 }
 
-//NOTE: MAKE IT BETTER AND RETURN USEFUL INFORMATION AS STRUCT
+/// NEEDS TO BE FIXED: prints a bunch of info about the device given by the const values VID and
+/// PID
 pub fn micro_get_info(context: &Context) {
     //Open and get a handle to a device with a certain VID and PID
     let dhandle = match context.open_device_with_vid_pid(VID, PID) {
