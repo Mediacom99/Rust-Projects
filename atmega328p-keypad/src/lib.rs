@@ -29,8 +29,8 @@ use std::{process::exit, thread::sleep, time::Duration, vec::Vec};
 
 pub const TIMEOUT: Duration = Duration::from_secs(60 * 5);
 pub const WAIT: Duration = Duration::from_millis(500);
-pub const VID: u16 = 0x16c0;
-pub const PID: u16 = 0x05dc;
+pub const VID: u16 = 0x1cd0; //0x16c0;
+pub const PID: u16 = 0x000a; //0x05dc;
 pub const MAXBUFSIZE: usize = 100;
 pub const READ_BUFSIZE: usize = 1;
 
