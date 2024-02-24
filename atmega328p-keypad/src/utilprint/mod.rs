@@ -1,7 +1,7 @@
 //Utility functions like printing status of objects, usb devices and so on. These are all functions
 //that only give information to the user by printing something on stdout
 
-use crate::{PID, VID};
+use crate::{PID, TIMEOUT, VID};
 use rusb::*;
 use std::process::exit;
 
@@ -118,7 +118,11 @@ pub fn micro_get_info(context: &Context) {
     //Get device struct from device handle
     let device = dhandle.device();
 
-    //Read active configuration descriptor
+    //Get device language
+    let lang = dhandle
+        .read_languages(TIMEOUT)
+        .expect("Could not read device languages")[0];
+
     let cfg_desc = match device.active_config_descriptor() {
         Ok(cfg) => cfg,
         Err(err) => {
@@ -128,6 +132,12 @@ pub fn micro_get_info(context: &Context) {
             );
             exit(13);
         }
+    };
+
+    //Read string config descriptor
+    match dhandle.read_configuration_string(lang, &cfg_desc, TIMEOUT) {
+        Ok(ok) => println!("Config descriptor:\n{}", ok),
+        Err(err) => println!("Could not read config string descriptor. Error: {}", err),
     };
 
     println!("Device Max Power in milliamps: {}", cfg_desc.max_power());
@@ -161,6 +171,12 @@ pub fn micro_get_info(context: &Context) {
                     TransferType::Interrupt => println!("Transfer: interrupt"),
                 }
             }
+
+            //Read interface descriptor string
+            match dhandle.read_interface_string(lang, &desc, TIMEOUT) {
+                Ok(ok) => println!("Interface {} descriptor:\n{}", desc.interface_number(), ok),
+                Err(err) => println!("Could not read interface string descriptor. Error: {}", err),
+            };
         }
     }
 }
