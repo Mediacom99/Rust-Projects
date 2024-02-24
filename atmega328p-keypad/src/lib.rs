@@ -95,7 +95,7 @@ pub fn init_context() -> Context {
     Context::new().expect("Could not create a libusb context!")
 }
 
-///Read bytes from the device using a control transfer type
+///Read bytes from the device specified by the global variables VID and PID using a control transfer type
 pub fn micro_control_read(context: &Context) {
     println!(
         "Reading input from [VID: {}  PID: {}] using a control transfer...\n",
@@ -156,7 +156,8 @@ pub fn micro_control_read(context: &Context) {
 //
 //
 
-///Write a byte (or more), get back the same byte (or more) in a loop
+///This function reads a byte (or more) from stdin, sends them to the device and reads them back
+///once the device sends them back
 pub fn micro_control_write_read(context: &Context) {
     println!(
         "Writing to and reading from [VID: {}  PID: {}] in a loop...\n",
@@ -248,7 +249,7 @@ pub fn micro_control_write_read(context: &Context) {
 //
 //
 
-/// Get string from user using std::io::stdin and returning the string as a Vec<u8>
+/// Gets string from user using std::io::stdin and returns the string as a Vec<u8>
 fn get_from_user() -> Vec<u8> {
     println!("Write what you want to send to atmega:");
     let mut from_user: String = String::new();
@@ -277,8 +278,8 @@ fn get_from_user() -> Vec<u8> {
 //
 //
 
-///Write a control report that sends in the control transfer parameter wvalue the char that will be sent using interrupt
-// Read the interrupt
+///Write a control report that sends in the control transfer parameter wvalue the char that will be sent using interrupt pipe.
+///Then read the interrupt pipe for the sent char.
 pub fn micro_interrupt_read(context: &Context) {
     println!(
         "Reading input from [VID: {}  PID: {}] using an interrupt transfer...\n",
@@ -357,3 +358,83 @@ pub fn micro_interrupt_read(context: &Context) {
 //
 //
 //
+//
+//
+
+///Prints as much information as possible from a device given a certain VID and PID
+pub fn micro_get_info(context: &Context) {
+    //Open and get a handle to a device with a certain VID and PID
+    //
+    let dhandle = match context.open_device_with_vid_pid(VID, PID) {
+        Some(res) => res,
+        None => {
+            println!("Could not open device");
+            exit(1);
+        }
+    };
+
+    //Get device struct from device handle
+    let device = dhandle.device();
+
+    //Get device language
+    let lang = dhandle
+        .read_languages(TIMEOUT)
+        .expect("Could not read device languages")[0];
+
+    let cfg_desc = match device.active_config_descriptor() {
+        Ok(cfg) => cfg,
+        Err(err) => {
+            println!(
+                "Could not read active configuration descriptor from device! Error: {}",
+                err
+            );
+            exit(13);
+        }
+    };
+
+    //Read string config descriptor
+    match dhandle.read_configuration_string(lang, &cfg_desc, TIMEOUT) {
+        Ok(ok) => println!("Config descriptor:\n{}", ok),
+        Err(err) => println!("Could not read config string descriptor. Error: {}", err),
+    };
+
+    println!("Device Max Power in milliamps: {}", cfg_desc.max_power());
+    println!("Number of interfaces: {}", cfg_desc.num_interfaces());
+
+    //Iterate over interfaces in the current configuration:
+    for interface in cfg_desc.interfaces() {
+        //Iterate over current interface descriptors
+        for desc in interface.descriptors() {
+            println!("Interface number: {}", desc.interface_number());
+            println!("ALternate setting number: {}", desc.setting_number());
+            println!("Class code: {}", desc.class_code());
+            println!("Sub class code: {}", desc.sub_class_code());
+            println!("Number of endpoints: {}", desc.num_endpoints());
+            for edesc in desc.endpoint_descriptors() {
+                println!("Endpoint address: {}", edesc.address());
+                println!("Endpoint number: {}", edesc.number());
+                println!("Max packet size: {}", edesc.max_packet_size());
+                match edesc.direction() {
+                    Direction::In => {
+                        println!("Direction: IN");
+                    }
+                    Direction::Out => {
+                        println!("Direction: OUT");
+                    }
+                }
+                match edesc.transfer_type() {
+                    TransferType::Control => println!("Transfer: control"),
+                    TransferType::Isochronous => println!("Transfer: isochronous"),
+                    TransferType::Bulk => println!("Transfer: bulk"),
+                    TransferType::Interrupt => println!("Transfer: interrupt"),
+                }
+            }
+
+            //Read interface descriptor string
+            match dhandle.read_interface_string(lang, &desc, TIMEOUT) {
+                Ok(ok) => println!("Interface {} descriptor:\n{}", desc.interface_number(), ok),
+                Err(err) => println!("Could not read interface string descriptor. Error: {}", err),
+            };
+        }
+    }
+}

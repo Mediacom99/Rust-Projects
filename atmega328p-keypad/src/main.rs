@@ -4,12 +4,30 @@
 use atmega328p_keypad::*;
 use std::{env, process::exit};
 
-fn main() {
-    //Get command line arguments FIXME: Should not panic if no arguments are produced but instead I
-    //should write some help stuff
-    let args: Vec<String> = env::args().collect();
-    let command = &args[1];
+fn print_help() {
+    println!("Provide at least one argument from the following:");
+    println!("\tlist                                    List connected usb devices");
+    println!("\tread-control                            Read from micro using control transfer");
+    println!("\twrite-read-control                      Write as many as 100 bytes to the micro he sends them back!");
+    println!("\tread-interrupt                          Read from micro using interrupt transfer");
+    println!("\tmicro-get-info                          Get as many information about active configuration, interfaces and endpoints");
+    println!("\thelp                                    Prints this help message");
+}
 
+fn main() {
+    //Get command line arguments
+    let arguments: env::Args = env::args();
+    if arguments.len() < 2 {
+        println!(
+            "What do you want to do ? Choose a command and pass it as an argument to the program!"
+        );
+        print_help();
+        exit(0);
+    }
+
+    let command = arguments.last().unwrap();
+
+    //Init libusb context
     let context = init_context();
 
     match command.as_str() {
@@ -26,15 +44,10 @@ fn main() {
             micro_interrupt_read(&context);
         }
         "micro-get-info" => {
-            utilprint::micro_get_info(&context);
+            micro_get_info(&context);
         }
         "help" => {
-            println!("Provide at least one argument from the following:");
-            println!("\tlist                                        List connected usb devices");
-            println!("\tread-control                                Read from micro using control transfer");
-            println!("\twrite-read-control                          Write as many as 100 bytes to the micro he sends them back!");
-            println!("\tread-interrupt                              Read from micro using interrupt transfer");
-            println!("\tmicro-get-info                              Get as many information about active configuration, interfaces and endpoints");
+            print_help();
         }
 
         _ => {
