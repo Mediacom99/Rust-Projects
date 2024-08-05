@@ -1,3 +1,4 @@
+
 #[derive(Debug)]
 struct Rectangle {
     x: f64, //usually you make the fields private and u make getter functions to access the fields
