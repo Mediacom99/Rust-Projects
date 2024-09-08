@@ -23,7 +23,7 @@ fn main() {
         println!("Var inside block: {var}");
     }
 
-    println!("Var outside bloc: {var}");
+    println!("Var outside block: {var}");
 
     //It follows the last call in the current scope
     //
@@ -77,5 +77,7 @@ fn main() {
         .parse()
         .expect("Index entered is not a number!");
 
-    println!("Value of vector at {} is: {}", index, vect2[index]); //Try doing a seg fault and see                                                         //how Rust handles it by panicking instead of keep reading memory
+    println!("Value of vector at {} is: {}", index, vect2[index]);
+    //Try doing a seg fault and see
+    //how Rust handles it by panicking instead of keep reading memory
 }
